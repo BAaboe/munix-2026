@@ -128,15 +128,17 @@ popa
 jc .disk_error
 
 dec di
-add bx, [BPB_BytesPerSector]
+mov ax, word [BPB_BytesPerSector]
+add bx, ax
 
 jnc .no_overflow
 
 mov ax, es
-add ax, 0x100
+add ax, 0x1000
 mov es, ax
 
 .no_overflow:
+
 
 pop ax
 inc ax
@@ -158,7 +160,9 @@ call disk_error
 lba_to_chs:
 ; Follows https://en.wikipedia.org/wiki/Logical_block_addressing#CHS_conversion
 ; Get the sector number
+push ds
 xor dx, dx
+mov ds, dx
 div word [BPB_SectorsPerTrack]
 mov cx, dx
 inc cx
@@ -172,6 +176,7 @@ mov dh, dl
 mov ch, al
 shl ah, 6
 or cl, ah
+pop ds
 
 ret
 
@@ -235,67 +240,108 @@ db 0x55, 0xaa
 ; THIS IS THE SECTORS AFTER MBR
 
 mm_error_msg: db "INT 15h AX=E820h not supported", 0
+%include "bootloader/util.asm"
 %include "bootloader/gdt.asm"
 %include "bootloader/a20.asm"
 %include "bootloader/fat12.asm"
+%include "bootloader/multiboot2.asm"
+%include "bootloader/elf.asm"
 
 
 stage2:
+
+; Need to load the kernel elf file into a place in memory where it won't
+; be over written while makeing the proccess image.
+; We are gonne place the procces image at 0x10000
+; so if we place the elf file at 0x10000 + elf file size, this way we guatantee
+; that we won't overwrite the proccess image.
+; We do have to keep in mind that if the elf file gets to big we won't be able to fit it
+; inside the usable memory. If this happens we should load the elf file, and the module,
+; go to 32 bit move them out of the way, then make proccess image.
+
+; First we figure out how big the file is
 mov dl, [BPB_DriveNumber]
-mov ax, kernel_memory_seg
-mov es, ax
-mov bx, kernel_memory_offset
 xor ax, ax
 mov ds, ax
-mov si, file_name
+mov si, kernel_name
 
+push ds
+push si
+call find_file
+pop si
+pop ds
+
+; File size
+mov eax, [es:di + 28]
+; Cluster number of file
+mov cx, [es:di + 26]
+push cx
+
+mov dx, kernel_memory_seg
+mov ds, dx
+mov si, kernel_memory_offset
+
+
+call add_to_memory_address
+
+; Apperently when we call int 13h we need that offset + 200h is <= 10000h.
+; The easiest way I found to do this is by increasing segment by 1000h,
+; and setting offset to 0. This means we in worst case we waste 64kb.
+; Please tell me if there is a better way to do this.
+mov ax, ds
+add ax, 0x1000
+and ax, 0xf000
+mov es, ax
+xor bx, bx
+
+
+xor dx, dx
+mov ds, dx
+
+mov dl, [BPB_DriveNumber]
+pop ax
+push es
+push bx
+call read_clusters
+pop bx
+pop es
+
+mov ax, es
+mov ds, ax
+mov si, bx
+
+; ELF file should now be at 0x10000 + ELF file size
+; Now we need to construct the proccess image
+
+call construct_proccess_image
+
+push eax
+
+
+; Load the module file
+xor ax, ax
+mov ds, ax
+mov si, mod_name
+; Need to align the address such that bx + 0x200 !> 0x10000
+add ecx, 0x1000
+and ecx, 0xff00
+shr ecx, 4
+mov es, cx
+xor bx, bx
+mov dl, [BPB_DriveNumber]
+
+push es
+push bx
 call read_file
+pop bx
+pop es
+
+
+; Create the multiboot2 tags
 
 cli
 hlt
 
-;Use bios to find info about system
-;TODO
-
-; Get memory map
-mov ax, memory_map_seg
-mov es, ax
-mov di, memory_map_offset
-
-xor bp, bp
-add di, 24 ; First entry contains the number of entries
-
-; Magic number :)
-mov edx, 0x534D4150
-xor ebx, ebx
-
-.mm_loop:
-mov ecx, 24
-; Some BIOSes needs the top 16bits of eax to be zero
-xor eax, eax
-mov ax, 0xE820
-int 0x15
-jc .mm_carry
-inc bp
-add di, 24
-test ebx, ebx
-jnz .mm_loop
-
-.mm_carry:
-cmp ah, 0x86
-jne .mm_done
-
-; Don't want to end up here
-xor ax, ax
-mov ds, ax
-mov ax, mm_error_msg
-call print
-cli
-hlt
-
-.mm_done:
-mov di, memory_map_offset
-mov [es:di], bp
 
 ;Enter 32 bit
 cli
@@ -333,7 +379,16 @@ jmp eax
 cli
 hlt
 
-file_name: db "BOOT       /KERNEL     ", 0
+kernel_name: db "BOOT       /KERNEL     ", 0
+mod_name: db "BOOT       /INITRD~1CPI", 0 
+; I depated long and hard about if I should implement LFN for my fat12 reader,
+; shorten the filename, or look for the SFN version in the code.
+; I decided that I want my bootloader to work for munix without having to
+; do changes to munix, but I couldn't be bothered to implement LFN, they are funky
+; with how they store them (using UCS-2 characters, and having the filename in semi wrong order, and split up quit a lot),
+; so I ended up with just using the SFN version.
+; Should work
+
 times 2048-($-$$) db 0
 buffer:
 

@@ -1,7 +1,7 @@
 ; dl: drive
 ; ds:si file name
 ; es:bx memory address
-; ret: ax:cx file size
+; ret: ecx file size
 read_file:
 push dx
 push es
@@ -10,8 +10,7 @@ call find_file
 
 mov ax, [es:di + 26]
 mov [cluster], ax
-mov cx, [es:di + 28]
-mov ax, [es:di + 30]
+mov ecx, [es:di + 28]
 pop bx
 pop es
 pop dx
@@ -79,10 +78,6 @@ inc ax
 
 ; If we are at the end of the root directory we didn't find the file
 cmp ax, [root_end_lba]
-push ax
-mov al, '0'
-out 0xe9, al
-pop ax
 jz .entry_not_found
 
 jmp .read_next_sector
@@ -96,10 +91,6 @@ mov ax, [cluster]
 
 ; End of directory table, so file not found
 cmp ax, 0xff8
-push ax
-mov al, '1'
-out 0xe9, al
-pop ax
 jge .entry_not_found
 
 sub ax, 2
@@ -118,10 +109,6 @@ mov di, buffer
 .lookup_loop:
 ; Check if at the end of directory
 cmp [es:di], 0
-push ax
-mov al, '2'
-out 0xe9, al
-pop ax
 jz .entry_not_found
 
 
@@ -193,12 +180,18 @@ mov di, 1
 
 call read_sectors
 
+
 pusha
+push es
 call get_next_cluster_number
+pop es
 popa
 
-cmp word [cluster], 0xff8
+mov ax, [cluster]
+
+cmp word ax, 0xff8
 jl .read_loop
+
 
 ret
 

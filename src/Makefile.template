@@ -1,5 +1,6 @@
 .PHONY: all clean distclean
 .PHONY: test processes image run
+.PHONY: bootloader/bootloader
 
 # If building for host: Run tests by default.
 # If building for OS target: Build boot image by default.
@@ -108,6 +109,9 @@ processes: $(processes_raw)
 processes_image += $(processes_raw)
 endif
 
+bootloader/bootloader:
+	nasm -f bin -I$(srcdir) $(srcdir)/bootloader/bootloader.asm -o bootloader/bootloader
+
 # Bootable Disk Image
 # ======================================================================
 
@@ -120,11 +124,18 @@ initrd.cpio: $(processes_image)
 		| cpio --null -ov --format=newc > ../$@
 
 # Boot Image
-bootimage.iso: grub.cfg kernel/kernel initrd.cpio
-	mkdir -p bootimage/boot/grub/
-	cp -u kernel/kernel initrd.cpio bootimage/boot/
-	cp -u $(srcdir)/grub.cfg bootimage/boot/grub/
-	grub-mkrescue $(GRUBFLAGS) -o $@ bootimage/
+bootimage.iso: grub.cfg kernel/kernel initrd.cpio bootloader/bootloader
+	dd if=/dev/zero of=bootimage.img bs=512 count=2880 conv=notrunc
+	mkfs.fat -F12 -R4 bootimage.img
+	mmd -i bootimage.img ::/BOOT
+	dd if=bootloader/bootloader of=bootimage.img conv=notrunc
+	mcopy -i bootimage.img kernel/kernel ::/BOOT/KERNEL
+	mcopy -i bootimage.img initrd.cpio ::/BOOT/INITRD.CPIO
+
+# mkdir -p bootimage/boot/grub/
+# cp -u kernel/kernel initrd.cpio bootimage/boot/
+# cp -u $(srcdir)/grub.cfg bootimage/boot/grub/
+# grub-mkrescue $(GRUBFLAGS) -o $@ bootimage/
 
 image: bootimage.iso
 
@@ -136,8 +147,8 @@ image: bootimage.iso
 #QEMUFLAGS += -nographic
 #QEMUFLAGS += -icount 5,align=on#	Slow down
 
-# Essential boot flags: load image as CDROM, boot from CDROM.
-QEMUBOOT = -cdrom bootimage.iso -boot d
+# Essential boot flags: load image as hard drive
+QEMUBOOT = -drive file=bootimage.img,format=raw
 
 run: bootimage.iso
 	qemu-system-$(target_cpu) $(QEMUFLAGS) $(QEMUBOOT)
