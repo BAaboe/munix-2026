@@ -24,9 +24,10 @@ count_string_length:
 xor cx, cx
 .loop:
 inc cx
-cmp [es:di], 0
-jnz .done
+cmp byte [ds:si], 0
+jz .done
 
+xor eax, eax
 mov ax, 1
 
 ; preserving the ds and si, while adding ax to es:di

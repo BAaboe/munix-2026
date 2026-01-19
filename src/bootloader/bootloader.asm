@@ -318,30 +318,58 @@ call construct_proccess_image
 push eax
 
 
-; Load the module file
+; Load the module file just after the kernel proccess image
 xor ax, ax
 mov ds, ax
 mov si, mod_name
 ; Need to align the address such that bx + 0x200 !> 0x10000
 add ecx, 0x1000
-and ecx, 0xff00
+and ecx, 0xff000
 shr ecx, 4
 mov es, cx
 xor bx, bx
 mov dl, [BPB_DriveNumber]
 
+
 push es
 push bx
 call read_file
+
+; Get module end
+xor eax, eax
+mov ax, es
+shl eax, 4
+and ebx, 0xffff
+add eax, ebx
+
+; Get module start
 pop bx
 pop es
 
+xor ecx, ecx
+mov cx, bx
+xor ebx, ebx
+mov bx, es
+shl ebx, 4
+add ebx, ecx
 
-; Create the multiboot2 tags
+xchg eax, ebx
 
-cli
-hlt
+; We place the multiboot2 tags at module end
+push ebx
+mov si, bx
+and ebx, 0xf0000
+shr ebx, 4
+mov ds, bx
+pop ebx
 
+call set_multiboot2_tags
+
+xor ebx, ebx
+mov bx, ds
+shl ebx, 4
+add bx, si
+push ebx
 
 ;Enter 32 bit
 cli
@@ -349,15 +377,16 @@ cld
 
 call load_gdt
 
+pop ebx
+
 mov eax, cr0
 or al, 1
 mov cr0, eax
 
+pop ecx
 
 jmp 0x08:pm_mode
 
-cli 
-hlt
 
 [BITS 32]
 ;Trampoline
@@ -371,10 +400,9 @@ mov fs, ax
 mov gs, ax
 mov esp, 0x7c00
 
-mov eax, kernel_memory_seg
-shl eax, 4
-add eax, kernel_memory_offset
-jmp eax
+mov eax, 0x36d76289 ; mb2 magic number
+
+jmp ecx
 
 cli
 hlt

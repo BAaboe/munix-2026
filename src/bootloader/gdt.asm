@@ -23,12 +23,13 @@ gdt_end:
 
 
 gdtr:
-	dd 0
 	dw 0
+	dd 0
 
 load_gdt:
 ; Set the size
 xor eax, eax
+mov ds, eax
 mov eax, gdt_end+1
 sub eax, gdt
 mov [gdtr], ax
