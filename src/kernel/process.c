@@ -58,7 +58,9 @@ int process_load_path(struct process *p, const char *cwd, const char *path)
         if (phdr.p_type != PT_LOAD) continue;
 
             /* Load. */
-        TODO();
+		memset((uint8_t *)phdr.p_vaddr , 0, phdr.p_memsz);
+		file_pread(&p->execfile, (uint8_t*)phdr.p_vaddr, phdr.p_filesz, phdr.p_offset);
+
     }
 
     return 0;
@@ -86,8 +88,8 @@ int process_start(struct process *p, int argc, char *argv[])
     switch (start_strat) {
     case PSTART_CALL: {
         /* Start process via simple function call. */
-        UNUSED(p), UNUSED(argc), UNUSED(argv);
-        TODO();
+		return ((main_fn*)p->start_addr)(argc, argv);
+
         return -ENOTSUP;
     }
     };

@@ -114,6 +114,22 @@ int read_boot_info(struct boot_info *b)
             break;
         }
 
+		case MULTIBOOT_TAG_TYPE_MODULE: {
+			struct multiboot_tag_module *d = (void*) tag;
+			pr_info("tag: module: \"%s\"\n", d->cmdline);
+			b->initrd_addr = (void*) (uintptr_t) d->mod_start;
+			b->initrd_size = (size_t)((uintptr_t) d->mod_end - (uintptr_t) d->mod_start);
+			break;
+		}
+
+		case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
+			struct multiboot_tag_framebuffer_common *fb = (void *) tag;
+			b->text_fb_addr = (void*) (uintptr_t) fb->framebuffer_addr;
+			b->text_fb_height = fb->framebuffer_height;
+			b->text_fb_width = fb->framebuffer_width;
+			break;
+		 }
+
         default:
             pr_info("tag: type %2u (size %4u)\n", tag->type, tag->size);
             break;
