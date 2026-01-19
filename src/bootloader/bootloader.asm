@@ -9,7 +9,7 @@ nop
 BPB_OEM					db 'MUNIX   '
 BPB_BytesPerSector		dw 512
 BPB_SectorsPerCluster	db 1
-BPB_ReservedSectors		dw 4
+BPB_ReservedSectors		dw 5
 BPB_NumberOfFats		db 2
 BPB_RootEntries			dw 224
 BPB_TotalSectors		dw 2880
@@ -90,7 +90,7 @@ mov [BPB_TotalSectors], ax
 
 mov dl, [BPB_DriveNumber]
 mov ax, 1
-mov di, 3
+mov di, 4
 mov bx, 0x7e00
 call read_sectors
 
@@ -259,6 +259,17 @@ stage2:
 ; inside the usable memory. If this happens we should load the elf file, and the module,
 ; go to 32 bit move them out of the way, then make proccess image.
 
+push ds
+push ax
+xor ax, ax
+mov ds, ax
+mov ax, reading_file_msg
+pusha
+call print
+popa
+pop ax
+pop ds
+
 ; First we figure out how big the file is
 mov dl, [BPB_DriveNumber]
 xor ax, ax
@@ -417,7 +428,7 @@ mod_name: db "BOOT       /INITRD~1CPI", 0
 ; so I ended up with just using the SFN version.
 ; Should work
 
-times 2048-($-$$) db 0
+times 2560-($-$$) db 0
 buffer:
 
 memory_map_seg equ 0x0840

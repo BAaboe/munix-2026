@@ -3,6 +3,19 @@
 ; ret: eax: entry point
 ; ret: ecx: proccess image end address
 construct_proccess_image:
+
+push ds
+push ax
+xor ax, ax
+mov ds, ax
+mov ax, reading_elf_msg
+pusha
+call print
+popa
+pop ax
+pop ds
+
+
 ; Check if elf file.
 mov cx, 4
 
@@ -155,4 +168,5 @@ hlt
 
 proccess_image_end_addrsess: dd 0
 not_elf_err: db "Error: Tried to construct proccess image from none ELF file or no program headers", 0
+reading_elf_msg: db "Info: Creating proccess image from ELF file", 0
 elf_magic: db 0x7f, "ELF" 

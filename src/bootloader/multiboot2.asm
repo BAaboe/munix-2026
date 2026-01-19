@@ -2,6 +2,17 @@
 ; ebx: module end
 ; ds:si: tags address
 set_multiboot2_tags:
+push ds
+push ax
+xor ax, ax
+mov ds, ax
+mov ax, multiboot2_msg
+pusha
+call print
+popa
+pop ax
+pop ds
+
 push eax
 push ebx
 
@@ -138,3 +149,4 @@ ret
 
 multiboot2_size: dw 0
 module_string: db "initrd.cpio    ",0
+multiboot2_msg: db "Info: Making multiboot2 tags", 0

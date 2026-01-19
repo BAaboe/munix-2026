@@ -3,6 +3,17 @@
 ; es:bx memory address
 ; ret: ecx file size
 read_file:
+push ds
+push ax
+xor ax, ax
+mov ds, ax
+mov ax, reading_file_msg
+pusha
+call print
+popa
+pop ax
+pop ds
+
 push dx
 push es
 push bx
@@ -249,3 +260,5 @@ root_dir: db 0
 root_end_lba: dw 0
 end_of_directory: db 0
 cluster: dw 0
+
+reading_file_msg: db "Info: Reading file from disk", 0

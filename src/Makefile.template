@@ -126,7 +126,7 @@ initrd.cpio: $(processes_image)
 # Boot Image
 bootimage.iso: grub.cfg kernel/kernel initrd.cpio bootloader/bootloader
 	dd if=/dev/zero of=bootimage.img bs=512 count=2880 conv=notrunc
-	mkfs.fat -F12 -R4 bootimage.img
+	mkfs.fat -F12 -R5 bootimage.img
 	mmd -i bootimage.img ::/BOOT
 	dd if=bootloader/bootloader of=bootimage.img conv=notrunc
 	mcopy -i bootimage.img kernel/kernel ::/BOOT/KERNEL
