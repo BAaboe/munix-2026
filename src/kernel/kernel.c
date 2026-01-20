@@ -52,6 +52,43 @@ static int mount_initrd(void)
     return 0;
 }
 
+static struct file console;
+static int test_console(void){
+	init_driver_console();
+	int res = file_open_dev(&console, MAKEDEV(MAJ_CONSOLE, 0));
+	file_write(&console, "1est\n", 5);
+	file_write(&console, "2est\n", 5);
+	file_write(&console, "3est\n", 5);
+	file_write(&console, "4est\n", 5);
+	file_write(&console, "5est\n", 5);
+	file_write(&console, "6est\n", 5);
+	file_write(&console, "7est\n", 5);
+	file_write(&console, "8est\n", 5);
+	file_write(&console, "9est\n", 5);
+	file_write(&console, "10est\n", 6);
+	file_write(&console, "11est\n", 6);
+	file_write(&console, "12est\n", 6);
+	file_write(&console, "13est\n", 6);
+	file_write(&console, "14est\n", 6);
+	file_write(&console, "15est\n", 6);
+	file_write(&console, "16est\n", 6);
+	file_write(&console, "17est\n", 6);
+	file_write(&console, "18est\n", 6);
+	file_write(&console, "19est\n", 6);
+	file_write(&console, "20est\n", 6);
+	file_write(&console, "21est\n", 6);
+	file_write(&console, "22est\n", 6);
+	file_write(&console, "23est\n", 6);
+	file_write(&console, "24est\n", 6);
+	file_write(&console, "25est\n", 6);
+	file_write(&console, "26est\n", 6);
+	file_write(&console, "27est\n", 6);
+	file_write(&console, "28est\n", 6);
+	if(res < 0) return res;
+
+	return 0;
+}
+
 int kernel_main(void)
 {
     int res;
@@ -59,6 +96,7 @@ int kernel_main(void)
     /* Set up essential I/O and logging. */
     res = init_driver_serial();
     if (res < 0) return res;
+	init_driver_console();
     init_log();
     read_boot_info(&boot_info);
 

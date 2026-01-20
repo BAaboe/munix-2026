@@ -7,6 +7,7 @@ enum chrdev_majors {
     MAJ_NONE = 0,
     MAJ_MEM,
     MAJ_SERIAL,
+	MAJ_CONSOLE,
     MAJ_TTY,
     MAJ_RAMDISK,
 
@@ -38,6 +39,7 @@ enum fs_types {
 #define TTY_COOKED  0x0004 ///< "Cooked" mode: read line-by-line w/ line editing
 
 int init_driver_serial(void);
+int init_driver_console(void);
 int init_driver_tty(void);
 
 int init_driver_ramdisk(void);

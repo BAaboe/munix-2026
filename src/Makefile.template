@@ -110,6 +110,7 @@ processes: $(processes_raw)
 processes_image += $(processes_raw)
 endif
 
+
 bootloader/bootloader:
 	nasm -f bin -I$(srcdir) $(srcdir)/bootloader/bootloader.asm -o bootloader/bootloader
 

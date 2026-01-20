@@ -57,8 +57,7 @@ static int tty_open_dev(struct file *file, unsigned min)
      */
     int portres;
     if (min == 0) {
-        portres = -ENODEV;
-        TODO();
+        portres = file_open_dev(&tty->portdev, MAKEDEV(MAJ_CONSOLE, min));
         log_result(portres, "init tty %d on console\n", min);
     } else {
         portres = file_open_dev(&tty->portdev, MAKEDEV(MAJ_SERIAL, min));

@@ -439,7 +439,7 @@ int kshell_init_run(void)
     struct kshell ksh;
 
     /* Open a TTY for user interaction. */
-    res = file_open_dev(&tty1, MAKEDEV(MAJ_TTY, 1));
+    res = file_open_dev(&tty1, MAKEDEV(MAJ_TTY, 0));
     if (res < 0) return res;
 
     /* Start the in-kernel shell. */
