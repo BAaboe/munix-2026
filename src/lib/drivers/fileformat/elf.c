@@ -131,8 +131,11 @@ int elf_read_phdr32(
 
 int elf_load_seg32(struct file *f, Elf32_Phdr *phdr)
 {
-    UNUSED(f), UNUSED(phdr);
-    TODO();
-    return -ENOTSUP;
+	// Initialize the memory area where the segment it to be loaded.
+	memset((uint8_t *)phdr->p_vaddr, 0, phdr->p_memsz);
+	// Copy the segment to the correct place
+	file_pread(f, (uint8_t*)phdr->p_vaddr, phdr->p_filesz, phdr->p_offset);
+	
+	return 0;
 }
 

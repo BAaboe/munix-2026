@@ -57,9 +57,8 @@ int process_load_path(struct process *p, const char *cwd, const char *path)
         /* Skip non-load segments. */
         if (phdr.p_type != PT_LOAD) continue;
 
-            /* Load. */
-		memset((uint8_t *)phdr.p_vaddr , 0, phdr.p_memsz);
-		file_pread(&p->execfile, (uint8_t*)phdr.p_vaddr, phdr.p_filesz, phdr.p_offset);
+		/* Load. */
+		elf_load_seg32(&p->execfile, &phdr);
 
     }
 
